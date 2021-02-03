@@ -1,3 +1,14 @@
+'''
+************************************************
+
+Diana Ximena de Leon Figueroa
+Carne 18607
+Inteligencia Artificial
+01 de febrero de 2021
+
+************************************************
+'''
+
 # index 0 is tile type
 #   0 = blank normal tile
 #   1 = blank green goal tile
