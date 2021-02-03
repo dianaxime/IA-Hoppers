@@ -7,7 +7,7 @@ import math
 from tile import Tile
 
 
-class Halma():
+class Hopper_Player():
 
     def __init__(self, b_size=10, t_limit=60, c_player=Tile.P_RED):
 
@@ -26,8 +26,7 @@ class Halma():
                     element = Tile(0, 0, 0, row, col)
 
                 board[row][col] = element
-        #print(board)
-        # Save member variables
+        
         self.b_size = b_size
         self.t_limit = t_limit
         self.c_player = c_player
@@ -425,6 +424,19 @@ class Halma():
                 if self.current_player == Tile.P_GREEN else Tile.P_GREEN)
 
         
+    def show_board(self):
+        print(" ", end=" ")
+        for x in range(10):
+            print("| ", x, end=" ")
+        print("\n_____________________________________________________\n")
+        a = 0
+        for i in hopper.board:
+            print(a, end=" ")
+            a += 1
+            for j in i:
+                print("| ", j.piece, end=" ")
+            print()
+        print("_____________________________________________________")
 
             
 
@@ -432,11 +444,7 @@ class Halma():
 
 
 if __name__ == "__main__":
-    halma = Halma()
-    while halma.find_winner() == None:
-        for i in halma.board:
-            for j in i:
-                print(j.piece, end=" ")
-            print()
-        print("------------------------------------")
-        halma.execute_player_move()
+    hopper = Hopper_Player()
+    while hopper.find_winner() == None:
+        hopper.show_board()
+        hopper.execute_player_move()

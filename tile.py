@@ -40,7 +40,7 @@ class Tile():
         self.loc = (row, col)
 
     def __str__(self):
-        return chr(self.loc[1] + 97) + str(self.loc[0] + 1)
+        return "(" + str(self.loc[1]) + "," + str(self.loc[0]) + ")"
 
     def __repr__(self):
-        return chr(self.loc[1] + 97) + str(self.loc[0] + 1)
+        return "(" + str(self.loc[1]) + "," + str(self.loc[0]) + ")"
