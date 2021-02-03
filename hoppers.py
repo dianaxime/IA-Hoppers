@@ -4,7 +4,6 @@ import time
 import math
 
 # Custom module imports
-from board import Board
 from tile import Tile
 
 
