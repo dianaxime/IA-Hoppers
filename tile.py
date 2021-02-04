@@ -37,15 +37,9 @@ class Tile():
     P_GREEN = 1
     P_RED = 2
 
-    # Outline constants
-    O_NONE = 0
-    O_SELECT = 1
-    O_MOVED = 2
-
-    def __init__(self, tile=0, piece=0, outline=0, row=0, col=0):
+    def __init__(self, tile=0, piece=0, row=0, col=0):
         self.tile = tile
         self.piece = piece
-        self.outline = outline
         self.row = row
         self.col = col
         self.loc = (row, col)

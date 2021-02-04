@@ -29,11 +29,11 @@ class Hopper_Player():
         for row in range(boardSize):
             for col in range(boardSize):
                 if row + col < 5:
-                    element = Tile(2, 2, 0, row, col)
+                    element = Tile(2, 2, row, col)
                 elif 1 + row + col > 2 * (boardSize - 3):
-                    element = Tile(1, 1, 0, row, col)
+                    element = Tile(1, 1, row, col)
                 else:
-                    element = Tile(0, 0, 0, row, col)
+                    element = Tile(0, 0, row, col)
                 board[row][col] = element
         
         self.boardSize = boardSize
@@ -55,61 +55,6 @@ class Hopper_Player():
 
         if self.chosenPlayer == self.currentPlayer:
             self.execute_computer_move()
-        
-
-    def tile_clicked(self, row, col):
-        """row = input("Ingrese tecla que desea mover:")
-        col = input("Ingrese posición nueva :")"""
-        print(row, col)
-
-        if self.computing:  # Block clicks while computing
-            return
-
-        new_tile = self.board[row][col]
-
-        # If we are selecting a friendly piece
-        if new_tile.piece == self.currentPlayer:
-
-            self.outline_tiles(None)  # Reset outlines
-
-            # Outline the new and valid move tiles
-            new_tile.outline = Tile.O_MOVED
-            self.validMoves = self.get_moves_at_tile(new_tile,
-                self.currentPlayer)
-            self.outline_tiles(self.validMoves)
-
-            # Update status and save the new tile
-            print("Tile `" + str(new_tile) + "` selected")
-            self.selected_tile = new_tile
-
-        # If we already had a piece selected and we are moving a piece
-        elif self.selected_tile and new_tile in self.validMoves:
-            """selected = input("Ingrese tecla que desea mover:")
-            move_to = input("Ingrese posición nueva :")"""
-            
-            self.outline_tiles(None)  # Reset outlines
-            print("******************************")
-            print(self.selected_tile, new_tile)
-            self.move_piece(self.selected_tile, new_tile)  # Move the piece
-
-            # Update status and reset tracking variables
-            self.selected_tile = None
-            self.validMoves = []
-            self.currentPlayer = (Tile.P_RED
-                if self.currentPlayer == Tile.P_GREEN else Tile.P_GREEN)
-
-            # If there is a winner to the game
-            winner = self.find_winner()
-            if winner:
-                print("The " + ("green"
-                    if winner == Tile.P_GREEN else "red") + " player has won!")
-                self.currentPlayer = None
-
-            elif self.chosenPlayer is not None:
-                self.execute_computer_move()
-
-        else:
-            print("Invalid move attempted")
 
     def minimax(self, depth, player_to_max, max_time, a=float("-inf"),
                 b=float("inf"), maxing=True, prunes=0, boards=0):
@@ -198,7 +143,6 @@ class Hopper_Player():
         print("Total prune events:", prunes)
 
         # Move the resulting piece
-        self.outline_tiles(None)  # Reset outlines
         """MOVE ES EL MOVIMIENTO DE AI"""
         print("MOVEEE")
         print(move)
@@ -327,9 +271,6 @@ class Hopper_Player():
         to_tile.piece = from_tile.piece
         from_tile.piece = Tile.P_NONE
 
-        # Update outline
-        to_tile.outline = Tile.O_MOVED
-        from_tile.outline = Tile.O_MOVED
 
         self.attempts += 1
 
@@ -346,15 +287,7 @@ class Hopper_Player():
         else:
             return None
 
-    def outline_tiles(self, tiles=[], outline_type=Tile.O_SELECT):
-
-        if tiles is None:
-            tiles = [j for i in self.board for j in i]
-            outline_type = Tile.O_NONE
-
-        for tile in tiles:
-            tile.outline = outline_type
-
+    
     def utility_distance(self, player):
 
         def point_distance(p0, p1):
@@ -382,42 +315,58 @@ class Hopper_Player():
 
         return value
     
-    #mi jugada
     def execute_player_move(self):
 
-        current_turn = (self.attempts // 2) + 1
-        print("Turn", current_turn, "Player")
-        print("=================" + ("=" * len(str(current_turn))))
-        sys.stdout.flush()
-
-        row_old = int(input("Ingrese tecla que desea mover:"))
-        col_old = int(input("Ingrese posición nueva :"))
-
-        row_new = int(input("Ingrese tecla que desea mover:"))
-        col_new = int(input("Ingrese posición nueva :"))
+        print("Turno del Jugador")
         
-        move_from = self.board[row_old][col_old]
-        move_to = self.board[row_new][col_new]
-        self.move_piece(move_from, move_to)
+        row_old = int(input("Ingrese la fila de la ficha que desea mover: "))
+        col_old = int(input("Ingrese la columna de la ficha que desea mover: "))
 
-        winner = self.find_winner()
-        #print(self.chosenPlayer, "chosenPlayer")
-        if winner:
-            print("The " + ("green"
-                if winner == Tile.P_GREEN else "red") + " player has won!")
-            self.currentPlayer = None
+        
+        new_tile = self.board[row_old][col_old]
 
-            print()
-            print("Final Stats")
-            print("===========")
-            print("Final winner:", "green"
-                if winner == Tile.P_GREEN else "red")
-            print("Total # of plies:", self.attempts)
-        elif self.chosenPlayer is not None:
-            self.execute_computer_move()
-        else:  # Toggle the current player
-            self.currentPlayer = (Tile.P_RED
-                if self.currentPlayer == Tile.P_GREEN else Tile.P_GREEN)
+        # If we are selecting a friendly piece
+        if new_tile.piece == self.currentPlayer:
+
+            
+            # Outline the new and valid move tiles
+            self.validMoves = self.get_moves_at_tile(new_tile,
+                self.currentPlayer)
+            print(self.validMoves)
+
+            # Update status and save the new tile
+            print("Tile `" + str(new_tile) + "` selected")
+            self.selected_tile = new_tile
+
+            row_new = int(input("Ingrese tecla que desea mover:"))
+            col_new = int(input("Ingrese posición nueva :"))
+            new_tile = self.board[row_new][col_new]
+        # If we already had a piece selected and we are moving a piece
+            if self.selected_tile and new_tile in self.validMoves:
+                
+                print("******************************")
+                print(self.selected_tile, new_tile)
+                self.move_piece(self.selected_tile, new_tile)  # Move the piece
+
+                # Update status and reset tracking variables
+                self.selected_tile = None
+                self.validMoves = []
+                self.currentPlayer = (Tile.P_RED
+                    if self.currentPlayer == Tile.P_GREEN else Tile.P_GREEN)
+
+                # If there is a winner to the game
+                winner = self.find_winner()
+                if winner:
+                    print("El jugador " + ("azul"
+                        if winner == Tile.P_GREEN else "rojo") + "es el ganador")
+                    self.currentPlayer = None
+
+                elif self.chosenPlayer is not None:
+                    self.execute_computer_move()
+
+        else:
+            print("Movimiento inválido")
+
 
         
     def show_board(self):
