@@ -20,7 +20,7 @@ from tile import Tile
 
 class Hopper_Player():
 
-    def __init__(self, boardSize=10, timeLimit=60, chosenPlayer=Tile.P_RED):
+    def __init__(self, boardSize=10, timeLimit=60, chosenPlayer=Tile.RED_PIECE):
 
         # Crear el tablero vacio
         board = [[None] * boardSize for _ in range(boardSize)]
@@ -40,18 +40,18 @@ class Hopper_Player():
         self.timeLimit = timeLimit
         self.chosenPlayer = chosenPlayer
         self.board = board
-        self.currentPlayer = Tile.P_GREEN
+        self.currentPlayer = Tile.BLUE_PIECE
         self.selected_tile = None
         self.validMoves = []
-        self.computing = False
+        self.thinking = False
         self.attempts = 0
 
         self.deepness = 3
 
         self.redTargets = [t for row in board
-                        for t in row if t.tile == Tile.T_RED]
+                        for t in row if t.tile == Tile.RED_TARGET]
         self.greenTargets = [t for row in board
-                        for t in row if t.tile == Tile.T_GREEN]
+                        for t in row if t.tile == Tile.BLUE_TARGET]
 
         if self.chosenPlayer == self.currentPlayer:
             self.execute_computer_move()
@@ -70,8 +70,8 @@ class Hopper_Player():
             moves = self.get_next_moves(player_to_max)
         else:
             best_val = float("inf")
-            moves = self.get_next_moves((Tile.P_RED
-                    if player_to_max == Tile.P_GREEN else Tile.P_GREEN))
+            moves = self.get_next_moves((Tile.RED_PIECE
+                    if player_to_max == Tile.BLUE_PIECE else Tile.BLUE_PIECE))
         # For each move
         for move in moves:
             #print(move)
@@ -84,7 +84,7 @@ class Hopper_Player():
 
                 # Move piece to the move outlined
                 piece = move["from"].piece
-                move["from"].piece = Tile.P_NONE
+                move["from"].piece = Tile.BLANK_PIECE
                 to.piece = piece
                 boards += 1
 
@@ -96,13 +96,11 @@ class Hopper_Player():
                 boards = new_boards
 
                 # Move the piece back
-                to.piece = Tile.P_NONE
+                to.piece = Tile.BLANK_PIECE
                 move["from"].piece = piece
 
                 if maxing and val > best_val:
                     best_val = val
-                    """print("*************************")
-                    print(to.loc)"""
                     best_move = (move["from"].loc, to.loc)
                     a = max(a, val)
 
@@ -117,54 +115,47 @@ class Hopper_Player():
         return best_val, best_move, prunes, boards
 
     def execute_computer_move(self):
-        #print(self.chosenPlayer, "chosenPlayer")
-
-        # Print out search information
-        current_turn = (self.attempts // 2) + 1
-        print("Turn", current_turn, "Computation")
-        print("=================" + ("=" * len(str(current_turn))))
-        print("Executing search ...", end=" ")
+        print("Turno de IA")
+        print("Buscando...", end=" ")
         sys.stdout.flush()
 
-        # self.board_view.set_status("Computing next move...")
-        self.computing = True
+        self.thinking = True
         max_time = time.time() + self.timeLimit
 
-        # Execute minimax search
+        # Llamar a la función de minimax con alpha-beta pruning 
         start = time.time()
         _, move, prunes, boards = self.minimax(self.deepness,
             self.chosenPlayer, max_time)
         end = time.time()
 
-        # Print search result stats
-        print("complete")
-        print("Time to compute:", round(end - start, 4))
-        print("Total boards generated:", boards)
-        print("Total prune events:", prunes)
+        # Resultados de la busqueda
+        print("¡Completado!")
+        print("Tiempo utilizado: ", round(end - start, 4))
+        print("Total de tableros generados: ", boards)
+        print("Total de eventos recortados: ", prunes)
 
-        # Move the resulting piece
-        """MOVE ES EL MOVIMIENTO DE AI"""
-        move_from = self.board[move[0][0]][move[0][1]]
-        move_to = self.board[move[1][0]][move[1][1]]
-        self.move_piece(move_from, move_to)
+        # Realizar el movimiento devuelto por el algoritmo
+        moveFrom = self.board[move[0][0]][move[0][1]]
+        moveTo = self.board[move[1][0]][move[1][1]]
+        self.move_piece(moveFrom, moveTo)
 
         winner = self.find_winner()
         if winner:
             print("El jugador " + ("azul"
-                if winner == Tile.P_GREEN else "rojo") + " es el ganador")
+                if winner == Tile.BLUE_PIECE else "rojo") + " es el ganador")
             self.currentPlayer = None
 
             print("\nEstadisticas del juego")
             print("..........................")
             print("Ganador: ", "jugador azul"
-                if winner == Tile.P_GREEN else "jugador rojo")
+                if winner == Tile.BLUE_PIECE else "jugador rojo")
             print("Cantidad de jugadas: ", self.attempts)
 
         else:  # Toggle the current player
-            self.currentPlayer = (Tile.P_RED
-                if self.currentPlayer == Tile.P_GREEN else Tile.P_GREEN)
+            self.currentPlayer = (Tile.RED_PIECE
+                if self.currentPlayer == Tile.BLUE_PIECE else Tile.BLUE_PIECE)
 
-        self.computing = False
+        self.thinking = False
         print()
 
     def get_next_moves(self, player=1):
@@ -196,13 +187,13 @@ class Hopper_Player():
         col = tile.loc[1]
 
         # List of valid tile types to move to
-        valid_tiles = [Tile.T_NONE, Tile.T_GREEN, Tile.T_RED]
+        valid_tiles = [Tile.BLANK_TARGET, Tile.BLUE_TARGET, Tile.RED_TARGET]
         if tile.tile != player:
             #print("ya estas aqui men")
             valid_tiles.remove(player)  # Moving back into your own goal
-        if tile.tile != Tile.T_NONE and tile.tile != player:
+        if tile.tile != Tile.BLANK_TARGET and tile.tile != player:
             #print("pa que te vassssss")
-            valid_tiles.remove(Tile.T_NONE)  # Moving out of the enemy's goal
+            valid_tiles.remove(Tile.BLANK_TARGET)  # Moving out of the enemy's goal
 
         # Find and save immediately adjacent moves
         for col_delta in range(-1, 2):
@@ -230,7 +221,7 @@ class Hopper_Player():
                     continue
                 
 
-                if new_tile.piece == Tile.P_NONE:
+                if new_tile.piece == Tile.BLANK_PIECE:
                     if adj:  # Don't consider adjacent on subsequent calls 
                     #si hay un movimiento para seguirle dando
                         moves.append(new_tile)
@@ -251,7 +242,7 @@ class Hopper_Player():
                 if new_tile in moves or (new_tile.tile not in valid_tiles):
                     continue
 
-                if new_tile.piece == Tile.P_NONE:
+                if new_tile.piece == Tile.BLANK_PIECE:
                     moves.insert(0, new_tile)  # Prioritize jumps
                     self.get_moves_at_tile(new_tile, player, moves, False)
 
@@ -260,27 +251,27 @@ class Hopper_Player():
     def move_piece(self, from_tile, to_tile):
 
         # Handle trying to move a non-existant piece and moving into a piece
-        if from_tile.piece == Tile.P_NONE or to_tile.piece != Tile.P_NONE:
+        if from_tile.piece == Tile.BLANK_PIECE or to_tile.piece != Tile.BLANK_PIECE:
             print("Movimiento inválido\n")
             return
 
         # Move piece
         to_tile.piece = from_tile.piece
-        from_tile.piece = Tile.P_NONE
+        from_tile.piece = Tile.BLANK_PIECE
 
 
         self.attempts += 1
 
         print("Ficha movida de " + str(from_tile) +
             " a " + str(to_tile) + ", Turno del jugador " + ("azul" if
-            self.currentPlayer == Tile.P_RED else "rojo"))
+            self.currentPlayer == Tile.RED_PIECE else "rojo"))
 
     def find_winner(self):
 
-        if all(g.piece == Tile.P_GREEN for g in self.redTargets):
-            return Tile.P_GREEN
-        elif all(g.piece == Tile.P_RED for g in self.greenTargets):
-            return Tile.P_RED
+        if all(g.piece == Tile.BLUE_PIECE for g in self.redTargets):
+            return Tile.BLUE_PIECE
+        elif all(g.piece == Tile.RED_PIECE for g in self.greenTargets):
+            return Tile.RED_PIECE
         else:
             return None
 
@@ -297,17 +288,17 @@ class Hopper_Player():
 
                 tile = self.board[row][col]
 
-                if tile.piece == Tile.P_GREEN:
+                if tile.piece == Tile.BLUE_PIECE:
                     distances = [point_distance(tile.loc, g.loc) for g in
-                                 self.redTargets if g.piece != Tile.P_GREEN]
+                                 self.redTargets if g.piece != Tile.BLUE_PIECE]
                     value -= max(distances) if len(distances) else -50
 
-                elif tile.piece == Tile.P_RED:
+                elif tile.piece == Tile.RED_PIECE:
                     distances = [point_distance(tile.loc, g.loc) for g in
-                                 self.greenTargets if g.piece != Tile.P_RED]
+                                 self.greenTargets if g.piece != Tile.RED_PIECE]
                     value += max(distances) if len(distances) else -50
 
-        if player == Tile.P_RED:
+        if player == Tile.RED_PIECE:
             value *= -1
 
         return value
@@ -346,20 +337,20 @@ class Hopper_Player():
                 # Update status and reset tracking variables
                 self.selected_tile = None
                 self.validMoves = []
-                self.currentPlayer = (Tile.P_RED
-                    if self.currentPlayer == Tile.P_GREEN else Tile.P_GREEN)
+                self.currentPlayer = (Tile.RED_PIECE
+                    if self.currentPlayer == Tile.BLUE_PIECE else Tile.BLUE_PIECE)
 
                 # If there is a winner to the game
                 winner = self.find_winner()
                 if winner:
                     print("El jugador " + ("azul"
-                        if winner == Tile.P_GREEN else "rojo") + "es el ganador")
+                        if winner == Tile.BLUE_PIECE else "rojo") + "es el ganador")
                     self.currentPlayer = None
 
                     print("\nEstadisticas del juego")
                     print("..........................")
                     print("Ganador: ", "jugador azul"
-                        if winner == Tile.P_GREEN else "jugador rojo")
+                        if winner == Tile.BLUE_PIECE else "jugador rojo")
                     print("Cantidad de jugadas: ", self.attempts)
 
                 elif self.chosenPlayer is not None:

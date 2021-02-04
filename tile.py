@@ -18,24 +18,18 @@ Inteligencia Artificial
 #   0 = no piece
 #   1 = green piece
 #   2 = red piece
-#
-# index 2 is the outline type
-#   0 = no outline
-#   1 = selected outline
-#   2 = just moved
-
 
 class Tile():
 
     # Goal constants
-    T_NONE = 0
-    T_GREEN = 1
-    T_RED = 2
+    BLANK_TARGET = 0
+    BLUE_TARGET = 1
+    RED_TARGET = 2
 
     # Piece constants
-    P_NONE = 0
-    P_GREEN = 1
-    P_RED = 2
+    BLANK_PIECE = 0
+    BLUE_PIECE = 1
+    RED_PIECE = 2
 
     def __init__(self, tile=0, piece=0, row=0, col=0):
         self.tile = tile
