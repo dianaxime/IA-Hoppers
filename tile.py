@@ -45,7 +45,7 @@ class Tile():
         self.loc = (row, col)
 
     def __str__(self):
-        return "(" + str(self.loc[1]) + "," + str(self.loc[0]) + ")"
+        return str(self.loc)
 
     def __repr__(self):
-        return "(" + str(self.loc[1]) + "," + str(self.loc[0]) + ")"
+        return str(self.loc)
