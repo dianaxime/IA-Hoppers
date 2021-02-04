@@ -9,30 +9,20 @@ Inteligencia Artificial
 ************************************************
 '''
 
-# index 0 is tile type
-#   0 = blank normal tile
-#   1 = blank green goal tile
-#   2 = blank red goal tile
-#
-# index 1 is piece type
-#   0 = no piece
-#   1 = green piece
-#   2 = red piece
+class Coin():
 
-class Tile():
-
-    # Goal constants
+    # Constantes "OBJETIVO"
     BLANK_TARGET = 0
     BLUE_TARGET = 1
     RED_TARGET = 2
 
-    # Piece constants
-    BLANK_PIECE = 0
+    # Constantes de las casillas
+    BLANK_PIECE = 0 
     BLUE_PIECE = 1
     RED_PIECE = 2
 
-    def __init__(self, tile=0, piece=0, row=0, col=0):
-        self.tile = tile
+    def __init__(self, coin=0, piece=0, row=0, col=0):
+        self.coin = coin
         self.piece = piece
         self.row = row
         self.col = col
