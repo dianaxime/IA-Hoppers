@@ -41,11 +41,10 @@ class HopperPlayer():
         self.chosenPlayer = chosenPlayer
         self.board = board
         self.currentPlayer = Coin.BLUE_PIECE
-        self.selected_tile = None
+        self.selectedCoin = None
         self.validMoves = []
         self.thinking = False
         self.attempts = 0
-
         self.deepness = 3
 
         self.redTargets = [t for row in board
@@ -54,47 +53,43 @@ class HopperPlayer():
                         for t in row if t.coin == Coin.BLUE_TARGET]
 
         if self.chosenPlayer == self.currentPlayer:
-            self.execute_computer_move()
+            self.moveIA()
 
-    def minimax(self, depth, player_to_max, max_time, a=float("-inf"),
-                b=float("inf"), maxing=True, prunes=0, boards=0):
+    def minimax(self, depth, maxPlayer, timeOut, alpha=float("-inf"),
+                beta=float("inf"), maxing=True):
 
-        # Bottomed out base case
-        if depth == 0 or self.find_winner() or time.time() > max_time:
-            return self.utility_distance(player_to_max), None, prunes, boards
+        # Si estamos en la base
+        if depth == 0 or self.winnerIs() or time.time() > timeOut:
+            return self.utility_distance(maxPlayer), None
 
-        # Setup initial variables and find moves
+        # Iniciar las variables y encontrar los posibles movimientos
         best_move = None
         if maxing:
             best_val = float("-inf")
-            moves = self.get_next_moves(player_to_max)
+            moves = self.get_next_moves(maxPlayer)
         else:
             best_val = float("inf")
             moves = self.get_next_moves((Coin.RED_PIECE
-                    if player_to_max == Coin.BLUE_PIECE else Coin.BLUE_PIECE))
+                    if maxPlayer == Coin.BLUE_PIECE else Coin.BLUE_PIECE))
+        
         # For each move
         for move in moves:
-            #print(move)
             for to in move["to"]:
-                #print(to)
-
+                
                 # Bail out when we're out of time
-                if time.time() > max_time:
-                    return best_val, best_move, prunes, boards
+                if time.time() > timeOut:
+                    return best_val, best_move
 
                 # Move piece to the move outlined
                 piece = move["from"].piece
                 move["from"].piece = Coin.BLANK_PIECE
                 to.piece = piece
-                boards += 1
-
+                
                 # Recursively call self
                 #se vuelve a llamar de acuerdo a la profundidad programada para poder ver la mejor jugada a largo plazo
-                val, _, new_prunes, new_boards = self.minimax(depth - 1,
-                    player_to_max, max_time, a, b, not maxing, prunes, boards)
-                prunes = new_prunes
-                boards = new_boards
-
+                val, _,  = self.minimax(depth - 1,
+                    maxPlayer, timeOut, alpha, beta, not maxing)
+                
                 # Move the piece back
                 to.piece = Coin.BLANK_PIECE
                 move["from"].piece = piece
@@ -102,44 +97,37 @@ class HopperPlayer():
                 if maxing and val > best_val:
                     best_val = val
                     best_move = (move["from"].loc, to.loc)
-                    a = max(a, val)
+                    alpha = max(alpha, val)
 
                 if not maxing and val < best_val:
                     best_val = val
                     best_move = (move["from"].loc, to.loc)
-                    b = min(b, val)
+                    beta = min(beta, val)
 
-                if b <= a:
-                    return best_val, best_move, prunes + 1, boards
+                if beta <= alpha:
+                    return best_val, best_move
 
-        return best_val, best_move, prunes, boards
+        return best_val, best_move
 
-    def execute_computer_move(self):
+    def moveIA(self):
         print("Turno de IA")
         print("Buscando...", end=" ")
         sys.stdout.flush()
 
         self.thinking = True
-        max_time = time.time() + self.timeLimit
+        timeOut = time.time() + self.timeLimit
 
         # Llamar a la función de minimax con alpha-beta pruning 
-        start = time.time()
-        _, move, prunes, boards = self.minimax(self.deepness,
-            self.chosenPlayer, max_time)
-        end = time.time()
-
-        # Resultados de la busqueda
+        _, move = self.minimax(self.deepness,
+            self.chosenPlayer, timeOut)
         print("¡Completado!")
-        print("Tiempo utilizado: ", round(end - start, 4))
-        print("Total de tableros generados: ", boards)
-        print("Total de eventos recortados: ", prunes)
 
         # Realizar el movimiento devuelto por el algoritmo
         moveFrom = self.board[move[0][0]][move[0][1]]
         moveTo = self.board[move[1][0]][move[1][1]]
         self.move_piece(moveFrom, moveTo)
 
-        winner = self.find_winner()
+        winner = self.winnerIs()
         if winner:
             print("El jugador " + ("azul"
                 if winner == Coin.BLUE_PIECE else "rojo") + " es el ganador")
@@ -215,9 +203,6 @@ class HopperPlayer():
                 new_tile = self.board[new_row][new_col]
                 
                 if new_tile.coin not in valid_tiles: # para no poder regresar a mi área después de salir
-                    """print("no es valid tiles")
-                    print(valid_tiles)
-                    print(new_tile.coin)"""
                     continue
                 
 
@@ -259,14 +244,13 @@ class HopperPlayer():
         to_tile.piece = from_tile.piece
         from_tile.piece = Coin.BLANK_PIECE
 
-
         self.attempts += 1
 
         print("Ficha movida de " + str(from_tile) +
             " a " + str(to_tile) + ", Turno del jugador " + ("azul" if
             self.currentPlayer == Coin.RED_PIECE else "rojo"))
 
-    def find_winner(self):
+    def winnerIs(self):
 
         if all(g.piece == Coin.BLUE_PIECE for g in self.redTargets):
             return Coin.BLUE_PIECE
@@ -303,7 +287,7 @@ class HopperPlayer():
 
         return value
     
-    def execute_player_move(self):
+    def moveHuman(self):
 
         print("Turno del Jugador")
         
@@ -322,7 +306,7 @@ class HopperPlayer():
             self.validMoves = self.get_moves_at_tile(new_tile,
                 self.currentPlayer)
             print("Posibles movimientos desde esa casilla: " + str(self.validMoves))
-            self.selected_tile = new_tile
+            self.selectedCoin = new_tile
 
             # Pedir las coordenadas de la ficha a la que desea moverse
             row = int(input("Ingrese la fila de la casilla a la que se desea mover: "))
@@ -330,19 +314,19 @@ class HopperPlayer():
             new_tile = self.board[row][col]
        
             # Si la casilla a la que desea moverse es valida
-            if self.selected_tile and new_tile in self.validMoves:
+            if self.selectedCoin and new_tile in self.validMoves:
                 
                 # Entonces mueve la ficha
-                self.move_piece(self.selected_tile, new_tile)
+                self.move_piece(self.selectedCoin, new_tile)
 
                 # Update status and reset tracking variables
-                self.selected_tile = None
+                self.selectedCoin = None
                 self.validMoves = []
                 self.currentPlayer = (Coin.RED_PIECE
                     if self.currentPlayer == Coin.BLUE_PIECE else Coin.BLUE_PIECE)
 
                 # If there is a winner to the game
-                winner = self.find_winner()
+                winner = self.winnerIs()
                 if winner:
                     print("El jugador " + ("azul"
                         if winner == Coin.BLUE_PIECE else "rojo") + "es el ganador")
@@ -355,7 +339,7 @@ class HopperPlayer():
                     print("Cantidad de jugadas: ", self.attempts)
 
                 elif self.chosenPlayer is not None:
-                    self.execute_computer_move()
+                    self.moveIA()
             else:
                 print("Movimiento inválido\n")
         else:
@@ -384,6 +368,6 @@ class HopperPlayer():
 
 if __name__ == "__main__":
     hopper = HopperPlayer()
-    while hopper.find_winner() == None:
+    while hopper.winnerIs() == None:
         hopper.show_board()
-        hopper.execute_player_move()
+        hopper.moveHuman()
