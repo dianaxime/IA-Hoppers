@@ -63,51 +63,50 @@ class HopperPlayer():
             return self.heuristicFunction(maxPlayer), None
 
         # Iniciar las variables y encontrar los posibles movimientos
-        best_move = None
+        greatMove = None
         if maxing:
-            best_val = float("-inf")
-            moves = self.get_next_moves(maxPlayer)
+            greatValue = float("-inf")
+            moves = self.getNextMoves(maxPlayer)
         else:
-            best_val = float("inf")
-            moves = self.get_next_moves((Coin.RED_PIECE
+            greatValue = float("inf")
+            moves = self.getNextMoves((Coin.RED_PIECE
                     if maxPlayer == Coin.BLUE_PIECE else Coin.BLUE_PIECE))
         
-        # For each move
+        # Para cada movimiento encontrado
         for move in moves:
             for to in move["to"]:
                 
-                # Bail out when we're out of time
+                # Terminar cuando se acabe el tiempo
                 if time.time() > timeOut:
-                    return best_val, best_move
+                    return greatValue, greatMove
 
-                # Move piece to the move outlined
+                # Mueve la ficha a ese movimiento
                 piece = move["from"].piece
                 move["from"].piece = Coin.BLANK_PIECE
                 to.piece = piece
                 
-                # Recursively call self
-                #se vuelve a llamar de acuerdo a la profundidad programada para poder ver la mejor jugada a largo plazo
+                # Se vuelve a llamar a si misma para probar el movimiento
                 val, _,  = self.minimax(depth - 1,
                     maxPlayer, timeOut, alpha, beta, not maxing)
                 
-                # Move the piece back
+                # Mueve la ficha de regreso
                 to.piece = Coin.BLANK_PIECE
                 move["from"].piece = piece
 
-                if maxing and val > best_val:
-                    best_val = val
-                    best_move = (move["from"].position, to.position)
+                if maxing and val > greatValue:
+                    greatValue = val
+                    greatMove = (move["from"].position, to.position)
                     alpha = max(alpha, val)
 
-                if not maxing and val < best_val:
-                    best_val = val
-                    best_move = (move["from"].position, to.position)
+                if not maxing and val < greatValue:
+                    greatValue = val
+                    greatMove = (move["from"].position, to.position)
                     beta = min(beta, val)
 
                 if beta <= alpha:
-                    return best_val, best_move
+                    return greatValue, greatMove
 
-        return best_val, best_move
+        return greatValue, greatMove
 
     def moveIA(self):
         print("Turno de IA")
@@ -144,29 +143,27 @@ class HopperPlayer():
                 if self.currentPlayer == Coin.BLUE_PIECE else Coin.BLUE_PIECE)
 
         self.thinking = False
-        print()
 
-    def get_next_moves(self, player=1):
-
-        moves = []  # All possible moves
+    def getNextMoves(self, player=1):
+        moves = []
         for col in range(self.boardSize):
             for row in range(self.boardSize):
 
                 curr_tile = self.board[row][col]
 
-                # Skip board elements that are not the current player
+                # Descartar los movimientos del otro jugador
                 if curr_tile.piece != player:
                     continue
 
                 move = {
                     "from": curr_tile,
-                    "to": self.get_moves_at_tile(curr_tile, player)
+                    "to": self.getCoinMoves(curr_tile, player)
                 }
                 moves.append(move)
 
         return moves
 
-    def get_moves_at_tile(self, coin, player, moves=None, adj=True):
+    def getCoinMoves(self, coin, player, moves=None, adj=True):
 
         if moves is None:
             moves = []
@@ -174,62 +171,61 @@ class HopperPlayer():
         row = coin.position[0]
         col = coin.position[1]
 
-        # List of valid coin types to move to
-        valid_tiles = [Coin.BLANK_TARGET, Coin.BLUE_TARGET, Coin.RED_TARGET]
+        # Posibles valores validos para moverse
+        validOptions = [Coin.BLANK_TARGET, Coin.BLUE_TARGET, Coin.RED_TARGET]
+
+        # Si se esta movimiendo a su propia casa
         if coin.coin != player:
-            #print("ya estas aqui men")
-            valid_tiles.remove(player)  # Moving back into your own goal
+            validOptions.remove(player)
+        # Moviendose fuera de su objetivo
         if coin.coin != Coin.BLANK_TARGET and coin.coin != player:
-            #print("pa que te vassssss")
-            valid_tiles.remove(Coin.BLANK_TARGET)  # Moving out of the enemy's goal
+            validOptions.remove(Coin.BLANK_TARGET)
 
-        # Find and save immediately adjacent moves
-        for col_delta in range(-1, 2):
-            for row_delta in range(-1, 2):
+        # Encontrar los posibles movimientos adyacentes
+        for colD in range(-1, 2):
+            for rowD in range(-1, 2):
 
-                # Check adjacent tiles
+                # Revisar cada casilla cercana
+                rowN = row + rowD
+                colN = col + colD
 
-                new_row = row + row_delta
-                new_col = col + col_delta
-
-                # Skip checking degenerate values
-                #para revisar que no me estoy saliendo del tablero
-                if ((new_row == row and new_col == col) or
-                    new_row < 0 or new_col < 0 or
-                    new_row >= self.boardSize or new_col >= self.boardSize):
+                # Revisar que este dentro del tablero
+                if ((rowN == row and colN == col) or
+                    rowN < 0 or colN < 0 or
+                    rowN >= self.boardSize or colN >= self.boardSize):
                     continue
 
-                # Handle moves out of/in to goals
-                newCoin = self.board[new_row][new_col]
+                # Revisar movimientro dentro/fuera del objetivo
+                newCoin = self.board[rowN][colN]
                 
-                if newCoin.coin not in valid_tiles: # para no poder regresar a mi área después de salir
+                # No regresar a casa despues de salir
+                if newCoin.coin not in validOptions:
                     continue
                 
-
+                # Ya reviso los cercanos, no los revise despues
                 if newCoin.piece == Coin.BLANK_PIECE:
-                    if adj:  # Don't consider adjacent on subsequent calls 
-                    #si hay un movimiento para seguirle dando
+                    if adj: 
                         moves.append(newCoin)
                     continue
 
-                # Check jump tiles
+                # Ver si es posible saltar
+                rowN = rowN + rowD
+                colN = colN + colD
 
-                new_row = new_row + row_delta
-                new_col = new_col + col_delta
-
-                # Skip checking degenerate values
-                if (new_row < 0 or new_col < 0 or
-                    new_row >= self.boardSize or new_col >= self.boardSize):
+                # No revisar valores fuera del tablero
+                if (rowN < 0 or colN < 0 or
+                    rowN >= self.boardSize or colN >= self.boardSize):
                     continue
 
-                # Handle returning moves and moves out of/in to goals
-                newCoin = self.board[new_row][new_col] #para no poder regresar a mi área 
-                if newCoin in moves or (newCoin.coin not in valid_tiles):
+                # Verificar que no regrese o se salga del objetivo
+                newCoin = self.board[rowN][colN]
+                if newCoin in moves or (newCoin.coin not in validOptions):
                     continue
 
+                # Importancia a saltar
                 if newCoin.piece == Coin.BLANK_PIECE:
-                    moves.insert(0, newCoin)  # Prioritize jumps
-                    self.get_moves_at_tile(newCoin, player, moves, False)
+                    moves.insert(0, newCoin)
+                    self.getCoinMoves(newCoin, player, moves, False)
 
         return moves
 
@@ -311,7 +307,7 @@ class HopperPlayer():
             print("Selecciono la casilla: " + str(newCoin))
             
             # Buscar los posibles movimientos de esa ficha
-            self.validMoves = self.get_moves_at_tile(newCoin,
+            self.validMoves = self.getCoinMoves(newCoin,
                 self.currentPlayer)
             print("Posibles movimientos desde esa casilla: " + str(self.validMoves))
             self.selectedCoin = newCoin
