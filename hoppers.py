@@ -60,7 +60,7 @@ class HopperPlayer():
 
         # Si estamos en la base
         if depth == 0 or self.winnerIs() or time.time() > timeOut:
-            return self.utility_distance(maxPlayer), None
+            return self.heuristicFunction(maxPlayer), None
 
         # Iniciar las variables y encontrar los posibles movimientos
         best_move = None
@@ -125,7 +125,7 @@ class HopperPlayer():
         # Realizar el movimiento devuelto por el algoritmo
         moveFrom = self.board[move[0][0]][move[0][1]]
         moveTo = self.board[move[1][0]][move[1][1]]
-        self.move_piece(moveFrom, moveTo)
+        self.moveCoin(moveFrom, moveTo)
 
         winner = self.winnerIs()
         if winner:
@@ -233,7 +233,7 @@ class HopperPlayer():
 
         return moves
 
-    def move_piece(self, from_tile, to_tile):
+    def moveCoin(self, from_tile, to_tile):
 
         # Handle trying to move a non-existant piece and moving into a piece
         if from_tile.piece == Coin.BLANK_PIECE or to_tile.piece != Coin.BLANK_PIECE:
@@ -260,9 +260,9 @@ class HopperPlayer():
             return None
 
     
-    def utility_distance(self, player):
+    def heuristicFunction(self, player):
 
-        def point_distance(p0, p1):
+        def calculateHeuristic(p0, p1):
             return math.sqrt((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)
 
         value = 0
@@ -273,12 +273,12 @@ class HopperPlayer():
                 coin = self.board[row][col]
 
                 if coin.piece == Coin.BLUE_PIECE:
-                    distances = [point_distance(coin.loc, g.loc) for g in
+                    distances = [calculateHeuristic(coin.loc, g.loc) for g in
                                  self.redTargets if g.piece != Coin.BLUE_PIECE]
                     value -= max(distances) if len(distances) else -50
 
                 elif coin.piece == Coin.RED_PIECE:
-                    distances = [point_distance(coin.loc, g.loc) for g in
+                    distances = [calculateHeuristic(coin.loc, g.loc) for g in
                                  self.greenTargets if g.piece != Coin.RED_PIECE]
                     value += max(distances) if len(distances) else -50
 
@@ -317,7 +317,7 @@ class HopperPlayer():
             if self.selectedCoin and new_tile in self.validMoves:
                 
                 # Entonces mueve la ficha
-                self.move_piece(self.selectedCoin, new_tile)
+                self.moveCoin(self.selectedCoin, new_tile)
 
                 # Update status and reset tracking variables
                 self.selectedCoin = None
@@ -347,7 +347,7 @@ class HopperPlayer():
 
 
         
-    def show_board(self):
+    def showBoard(self):
         print(" ", end=" ")
         for x in range(10):
             print("| ", x, end=" ")
@@ -369,5 +369,5 @@ class HopperPlayer():
 if __name__ == "__main__":
     hopper = HopperPlayer()
     while hopper.winnerIs() == None:
-        hopper.show_board()
+        hopper.showBoard()
         hopper.moveHuman()
