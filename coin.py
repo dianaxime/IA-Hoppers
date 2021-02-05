@@ -26,10 +26,10 @@ class Coin():
         self.piece = piece
         self.row = row
         self.col = col
-        self.loc = (row, col)
+        self.position = (row, col)
 
     def __str__(self):
-        return str(self.loc)
+        return str(self.position)
 
     def __repr__(self):
-        return str(self.loc)
+        return str(self.position)
