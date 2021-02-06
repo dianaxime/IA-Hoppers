@@ -149,15 +149,15 @@ class HopperPlayer():
         for col in range(self.boardSize):
             for row in range(self.boardSize):
 
-                curr_tile = self.board[row][col]
+                currentCoin = self.board[row][col]
 
                 # Descartar los movimientos del otro jugador
-                if curr_tile.piece != player:
+                if currentCoin.piece != player:
                     continue
 
                 move = {
-                    "from": curr_tile,
-                    "to": self.getCoinMoves(curr_tile, player)
+                    "from": currentCoin,
+                    "to": self.getCoinMoves(currentCoin, player)
                 }
                 moves.append(move)
 
