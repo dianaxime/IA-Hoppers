@@ -45,7 +45,7 @@ class HopperPlayer():
         self.validMoves = []
         self.thinking = False
         self.attempts = 0
-        self.deepness = 1
+        self.deepness = 3
 
         self.redTargets = [t for row in board
                         for t in row if t.coin == Coin.RED_TARGET]
@@ -268,7 +268,9 @@ class HopperPlayer():
             return math.sqrt((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)
         '''
         def calculateHeuristic(p0, p1):
-            return (p1[0] - p0[0]) * (p1[1] - p0[1]) / ((math.e)**2)
+            # 1.67 por la masa del proton
+            # 1.26 por la permeabilidad magnetica del vacio
+            return (((p1[0] - p0[0]) + 1.67) * ((p1[1] - p0[1]) + 1.26)) / ((math.e)**2)
 
         value = 0
         # newvalue = 0
@@ -288,7 +290,7 @@ class HopperPlayer():
                     distances = [calculateHeuristic(coin.position, g.position) for g in
                                  self.redTargets if g.piece != Coin.BLUE_PIECE]
                     # newvalue -= max(distances1) if len(distances1) else -706
-                    value -= max(distances) if len(distances) else -50
+                    value -= max(distances) if len(distances) else -706
 
                 elif coin.piece == Coin.RED_PIECE:
                     '''distances = [calculateHeuristic(coin.position, g.position) for g in
@@ -297,7 +299,7 @@ class HopperPlayer():
                     distances = [calculateHeuristic(coin.position, g.position) for g in
                                  self.greenTargets if g.piece != Coin.RED_PIECE]
                     # newvalue += max(distances1) if len(distances) else -706
-                    value += max(distances) if len(distances) else -50
+                    value += max(distances) if len(distances) else -706
                     # print(distances, distances1)
                     # print(value, newvalue)
         
