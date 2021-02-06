@@ -49,7 +49,7 @@ class HopperPlayer():
 
         self.redTargets = [t for row in board
                         for t in row if t.coin == Coin.RED_TARGET]
-        self.greenTargets = [t for row in board
+        self.blueTargets = [t for row in board
                         for t in row if t.coin == Coin.BLUE_TARGET]
 
         if self.chosenPlayer == self.currentPlayer:
@@ -117,11 +117,10 @@ class HopperPlayer():
         timeOut = time.time() + self.timeLimit
 
         # Llamar a la función de minimax con alpha-beta pruning 
-        elvalor, move = self.minimax(self.deepness,
+        _, move = self.minimax(self.deepness,
             self.chosenPlayer, timeOut)
         print("¡Completado!")
-        print(elvalor)
-
+        
         # Realizar el movimiento devuelto por el algoritmo
         moveFrom = self.board[move[0][0]][move[0][1]]
         moveTo = self.board[move[1][0]][move[1][1]]
@@ -256,7 +255,7 @@ class HopperPlayer():
 
         if all(g.piece == Coin.BLUE_PIECE for g in self.redTargets):
             return Coin.BLUE_PIECE
-        elif all(g.piece == Coin.RED_PIECE for g in self.greenTargets):
+        elif all(g.piece == Coin.RED_PIECE for g in self.blueTargets):
             return Coin.RED_PIECE
         else:
             return None
@@ -264,17 +263,12 @@ class HopperPlayer():
     
     def heuristicFunction(self, player):
 
-        '''def calculateHeuristic(p0, p1):
-            return math.sqrt((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)
-        '''
-        def calculateHeuristic(p0, p1):
+        def calculateHeuristic(c, cG):
             # 1.67 por la masa del proton
             # 1.26 por la permeabilidad magnetica del vacio
-            return (((p1[0] - p0[0]) + 1.67) * ((p1[1] - p0[1]) + 1.26)) / ((math.e)**2)
+            return (((cG[0] - c[0]) + 1.67) * ((cG[1] - c[1]) + 1.26)) / ((math.e)**2)
 
-        value = 0
-        # newvalue = 0
-
+        result = 0
         # Para todas las posiciones en el tablero calcula el valor 
         # que tan cercano o lejano se encuentra de su area objetivo
 
@@ -284,29 +278,21 @@ class HopperPlayer():
                 coin = self.board[row][col]
 
                 if coin.piece == Coin.BLUE_PIECE:
-                    '''distances = [calculateHeuristic(coin.position, g.position) for g in
-                                 self.redTargets if g.piece != Coin.BLUE_PIECE]
-                                 '''
-                    distances = [calculateHeuristic(coin.position, g.position) for g in
-                                 self.redTargets if g.piece != Coin.BLUE_PIECE]
-                    # newvalue -= max(distances1) if len(distances1) else -706
-                    value -= max(distances) if len(distances) else -706
+                    reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
+                            if x.piece != Coin.BLUE_PIECE else None, 
+                            self.redTargets))
+                    result -= max(reach) if len(reach) else -706
 
                 elif coin.piece == Coin.RED_PIECE:
-                    '''distances = [calculateHeuristic(coin.position, g.position) for g in
-                                 self.greenTargets if g.piece != Coin.RED_PIECE]
-                                 '''
-                    distances = [calculateHeuristic(coin.position, g.position) for g in
-                                 self.greenTargets if g.piece != Coin.RED_PIECE]
-                    # newvalue += max(distances1) if len(distances) else -706
-                    value += max(distances) if len(distances) else -706
-                    # print(distances, distances1)
-                    # print(value, newvalue)
+                    reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
+                            if x.piece != Coin.RED_PIECE else None, 
+                            self.blueTargets))
+                    result += max(reach) if len(reach) else -706
         
         if player == Coin.RED_PIECE:
-            value *= -1
+            result *= -1
 
-        return value
+        return result
     
     def humanMove(self):
 
