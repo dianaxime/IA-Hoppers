@@ -17,43 +17,61 @@ import math
 # Importar el modulo de casilla adicional
 from coin import Coin
 
+BOARD_SIZE = 10
+TIME_LIMIT = 60
+DEEPNESS = 3
 
 class HopperPlayer():
 
-    def __init__(self, boardSize=10, timeLimit=60, chosenPlayer=Coin.RED_PIECE):
+    def __init__(self, chosenPlayer=Coin.RED_PIECE):
 
+        self.board = self.createBoard()
+        self.currentPlayer = Coin.BLUE_PIECE
+        self.chosenPlayer = chosenPlayer
+        self.validMoves = []
+        self.selectedCoin = None
+        self.attempts = 0
+        self.thinking = False
+        self.redTargets = [coin for row in self.board
+                        for coin in row if coin.coin == Coin.RED_TARGET]
+        self.blueTargets = [coin for row in self.board
+                        for coin in row if coin.coin == Coin.BLUE_TARGET]
+
+        if self.chosenPlayer == self.currentPlayer:
+            self.moveIA()
+
+    def createBoard(self):
         # Crear el tablero vacio
-        board = [[None] * boardSize for _ in range(boardSize)]
+        board = [[None] * BOARD_SIZE for _ in range(BOARD_SIZE)]
         
         # Colocar las piezas de cada jugador
-        for row in range(boardSize):
-            for col in range(boardSize):
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
                 if row + col < 5:
                     element = Coin(2, 2, row, col)
-                elif 1 + row + col > 2 * (boardSize - 3):
+                elif 1 + row + col > 2 * (BOARD_SIZE - 3):
                     element = Coin(1, 1, row, col)
                 else:
                     element = Coin(0, 0, row, col)
                 board[row][col] = element
-        
-        self.boardSize = boardSize
-        self.timeLimit = timeLimit
-        self.chosenPlayer = chosenPlayer
-        self.board = board
-        self.currentPlayer = Coin.BLUE_PIECE
-        self.selectedCoin = None
-        self.validMoves = []
-        self.thinking = False
-        self.attempts = 0
-        self.deepness = 3
 
-        self.redTargets = [t for row in board
-                        for t in row if t.coin == Coin.RED_TARGET]
-        self.blueTargets = [t for row in board
-                        for t in row if t.coin == Coin.BLUE_TARGET]
+        return board
 
-        if self.chosenPlayer == self.currentPlayer:
-            self.moveIA()
+    # Funcion para mostrar el estado actual del tablero  
+    def showBoard(self):
+        print(" ", end=" ")
+        for x in range(10):
+            print("| ", x, end=" ")
+        print("\n_____________________________________________________\n")
+        a = 0
+        for i in hopper.board:
+            print(a, end=" ")
+            a += 1
+            for j in i:
+                print("| ", j.piece, end=" ")
+            print()
+        print("_____________________________________________________")
+
 
     def minimax(self, depth, maxPlayer, timeOut, alpha=float("-inf"),
                 beta=float("inf"), maxing=True):
@@ -74,15 +92,15 @@ class HopperPlayer():
         
         # Para cada movimiento encontrado
         for move in moves:
-            for to in move["to"]:
+            for to in move[1]:
                 
                 # Terminar cuando se acabe el tiempo
                 if time.time() > timeOut:
                     return greatValue, greatMove
 
                 # Mueve la ficha a ese movimiento
-                piece = move["from"].piece
-                move["from"].piece = Coin.BLANK_PIECE
+                piece = move[0].piece
+                move[0].piece = Coin.BLANK_PIECE
                 to.piece = piece
                 
                 # Se vuelve a llamar a si misma para probar el movimiento
@@ -91,16 +109,16 @@ class HopperPlayer():
                 
                 # Mueve la ficha de regreso
                 to.piece = Coin.BLANK_PIECE
-                move["from"].piece = piece
+                move[0].piece = piece
 
                 if maxing and val > greatValue:
                     greatValue = val
-                    greatMove = (move["from"].position, to.position)
+                    greatMove = (move[0].position, to.position)
                     alpha = max(alpha, val)
 
                 if not maxing and val < greatValue:
                     greatValue = val
-                    greatMove = (move["from"].position, to.position)
+                    greatMove = (move[0].position, to.position)
                     beta = min(beta, val)
 
                 if beta <= alpha:
@@ -108,46 +126,43 @@ class HopperPlayer():
 
         return greatValue, greatMove
 
-    def moveIA(self):
-        print("Turno de IA")
-        print("Buscando...", end=" ")
-        sys.stdout.flush()
+    def heuristicFunction(self, player):
 
-        self.thinking = True
-        timeOut = time.time() + self.timeLimit
+        def calculateHeuristic(c, cG):
+            # 1.67 por la masa del proton
+            # 1.26 por la permeabilidad magnetica del vacio
+            return (((cG[0] - c[0]) + 1.67) * ((cG[1] - c[1]) + 1.26)) / ((math.e)**2)
 
-        # Llamar a la función de minimax con alpha-beta pruning 
-        _, move = self.minimax(self.deepness,
-            self.chosenPlayer, timeOut)
-        print("¡Completado!")
+        result = 0
+        # Para todas las posiciones en el tablero calcula el valor 
+        # que tan cercano o lejano se encuentra de su area objetivo
+
+        for col in range(BOARD_SIZE):
+            for row in range(BOARD_SIZE):
+
+                coin = self.board[row][col]
+
+                if coin.piece == Coin.BLUE_PIECE:
+                    reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
+                            if x.piece != Coin.BLUE_PIECE else None, 
+                            self.redTargets))
+                    result -= max(reach) if len(reach) else -706
+
+                elif coin.piece == Coin.RED_PIECE:
+                    reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
+                            if x.piece != Coin.RED_PIECE else None, 
+                            self.blueTargets))
+                    result += max(reach) if len(reach) else -706
         
-        # Realizar el movimiento devuelto por el algoritmo
-        moveFrom = self.board[move[0][0]][move[0][1]]
-        moveTo = self.board[move[1][0]][move[1][1]]
-        self.moveCoin(moveFrom, moveTo)
+        if player == Coin.RED_PIECE:
+            result *= -1
 
-        winner = self.winnerIs()
-        if winner:
-            print("El jugador " + ("azul"
-                if winner == Coin.BLUE_PIECE else "rojo") + " es el ganador")
-            self.currentPlayer = None
-
-            print("\nEstadisticas del juego")
-            print("..........................")
-            print("Ganador: ", "jugador azul"
-                if winner == Coin.BLUE_PIECE else "jugador rojo")
-            print("Cantidad de jugadas: ", self.attempts)
-
-        else:  # Darle el turno al otro jugador
-            self.currentPlayer = (Coin.RED_PIECE
-                if self.currentPlayer == Coin.BLUE_PIECE else Coin.BLUE_PIECE)
-
-        self.thinking = False
+        return result
 
     def getNextMoves(self, player=1):
         moves = []
-        for col in range(self.boardSize):
-            for row in range(self.boardSize):
+        for col in range(BOARD_SIZE):
+            for row in range(BOARD_SIZE):
 
                 currentCoin = self.board[row][col]
 
@@ -155,11 +170,7 @@ class HopperPlayer():
                 if currentCoin.piece != player:
                     continue
 
-                move = {
-                    "from": currentCoin,
-                    "to": self.getCoinMoves(currentCoin, player)
-                }
-                moves.append(move)
+                moves.append((currentCoin, self.getCoinMoves(currentCoin, player)))
 
         return moves
 
@@ -192,7 +203,7 @@ class HopperPlayer():
                 # Revisar que este dentro del tablero
                 if ((rowN == row and colN == col) or
                     rowN < 0 or colN < 0 or
-                    rowN >= self.boardSize or colN >= self.boardSize):
+                    rowN >= BOARD_SIZE or colN >= BOARD_SIZE):
                     continue
 
                 # Revisar movimientro dentro/fuera del objetivo
@@ -214,7 +225,7 @@ class HopperPlayer():
 
                 # No revisar valores fuera del tablero
                 if (rowN < 0 or colN < 0 or
-                    rowN >= self.boardSize or colN >= self.boardSize):
+                    rowN >= BOARD_SIZE or colN >= BOARD_SIZE):
                     continue
 
                 # Verificar que no regrese o se salga del objetivo
@@ -248,51 +259,21 @@ class HopperPlayer():
             " a " + str(toCoin) + ", Turno del jugador " + ("azul" if
             self.currentPlayer == Coin.RED_PIECE else "rojo"))
 
+    
     # Verifica si existe algun ganador
     def winnerIs(self):
 
+        red = [coin.piece == Coin.BLUE_PIECE for coin in self.redTargets]
+        blue = [coin.piece == Coin.RED_PIECE for coin in self.blueTargets]
+        
         # Si algun jugador ya tiene todas sus fichas en su objetivo
-
-        if all(g.piece == Coin.BLUE_PIECE for g in self.redTargets):
+        if all(red):
             return Coin.BLUE_PIECE
-        elif all(g.piece == Coin.RED_PIECE for g in self.blueTargets):
+        elif all(blue):
             return Coin.RED_PIECE
         else:
             return None
 
-    
-    def heuristicFunction(self, player):
-
-        def calculateHeuristic(c, cG):
-            # 1.67 por la masa del proton
-            # 1.26 por la permeabilidad magnetica del vacio
-            return (((cG[0] - c[0]) + 1.67) * ((cG[1] - c[1]) + 1.26)) / ((math.e)**2)
-
-        result = 0
-        # Para todas las posiciones en el tablero calcula el valor 
-        # que tan cercano o lejano se encuentra de su area objetivo
-
-        for col in range(self.boardSize):
-            for row in range(self.boardSize):
-
-                coin = self.board[row][col]
-
-                if coin.piece == Coin.BLUE_PIECE:
-                    reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
-                            if x.piece != Coin.BLUE_PIECE else None, 
-                            self.redTargets))
-                    result -= max(reach) if len(reach) else -706
-
-                elif coin.piece == Coin.RED_PIECE:
-                    reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
-                            if x.piece != Coin.RED_PIECE else None, 
-                            self.blueTargets))
-                    result += max(reach) if len(reach) else -706
-        
-        if player == Coin.RED_PIECE:
-            result *= -1
-
-        return result
     
     def humanMove(self):
 
@@ -352,25 +333,43 @@ class HopperPlayer():
         else:
             print("Movimiento inválido\n")
 
+    def moveIA(self):
+        print("Turno de IA")
+        print("Buscando...", end=" ")
+        sys.stdout.flush()
 
-    # Funcion para mostrar el estado actual del tablero  
-    def showBoard(self):
-        print(" ", end=" ")
-        for x in range(10):
-            print("| ", x, end=" ")
-        print("\n_____________________________________________________\n")
-        a = 0
-        for i in hopper.board:
-            print(a, end=" ")
-            a += 1
-            for j in i:
-                print("| ", j.piece, end=" ")
-            print()
-        print("_____________________________________________________")
+        self.thinking = True
+        timeOut = time.time() + TIME_LIMIT
+
+        # Llamar a la función de minimax con alpha-beta pruning 
+        _, move = self.minimax(DEEPNESS,
+            self.chosenPlayer, timeOut)
+        print("¡Completado!")
+        
+        # Realizar el movimiento devuelto por el algoritmo
+        moveFrom = self.board[move[0][0]][move[0][1]]
+        moveTo = self.board[move[1][0]][move[1][1]]
+        self.moveCoin(moveFrom, moveTo)
+
+        winner = self.winnerIs()
+        if winner:
+            print("El jugador " + ("azul"
+                if winner == Coin.BLUE_PIECE else "rojo") + " es el ganador")
+            self.currentPlayer = None
+
+            print("\nEstadisticas del juego")
+            print("..........................")
+            print("Ganador: ", "jugador azul"
+                if winner == Coin.BLUE_PIECE else "jugador rojo")
+            print("Cantidad de jugadas: ", self.attempts)
+
+        else:  # Darle el turno al otro jugador
+            self.currentPlayer = (Coin.RED_PIECE
+                if self.currentPlayer == Coin.BLUE_PIECE else Coin.BLUE_PIECE)
+
+        self.thinking = False
 
             
-
-        
 
 
 if __name__ == "__main__":
