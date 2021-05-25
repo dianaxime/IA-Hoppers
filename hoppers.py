@@ -128,13 +128,18 @@ class HopperPlayer():
 
         return greatValue, greatMove
 
+
+
     def heuristicFunction(self, player):
 
         def calculateHeuristic(c, cG):
             # 1.67 por la masa del proton
             # 1.26 por la permeabilidad magnetica del vacio
             # return (((cG[0] - c[0]) + 1.67) * ((cG[1] - c[1]) + 1.26)) / ((math.e)**2)
-            return math.sqrt((cG[0] - c[0]) ** 2 + (cG[1] - c[1]) ** 2)
+            row = (abs(cG[0] - c[0])) ** 2
+            col = (abs(cG[1] - c[1])) ** 2
+            val = (row + col) ** 1/2
+            return val
 
         result = 0
         # Para todas las posiciones en el tablero calcula el valor 
