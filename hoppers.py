@@ -13,6 +13,7 @@ Inteligencia Artificial
 import sys
 import time
 import math
+from xml.dom import minidom
 
 # Importar el modulo de casilla adicional
 from coin import Coin
@@ -39,6 +40,7 @@ class HopperPlayer():
 
         if self.chosenPlayer == self.currentPlayer:
             self.moveIA()
+        self.path = []
 
     def createBoard(self):
         # Crear el tablero vacio
@@ -349,7 +351,41 @@ class HopperPlayer():
         # Realizar el movimiento devuelto por el algoritmo
         moveFrom = self.board[move[0][0]][move[0][1]]
         moveTo = self.board[move[1][0]][move[1][1]]
+        self.path = self.getCoinMoves(moveFrom, self.chosenPlayer)
         self.moveCoin(moveFrom, moveTo)
+        
+        # Escribir XML 
+        root = minidom.Document()
+  
+        xml = root.createElement('move') 
+        root.appendChild(xml)
+        
+        fromChild = root.createElement('from')
+        fromChild.setAttribute('row', str(move[0][0]))
+        fromChild.setAttribute('col', str(move[0][1]))
+        
+        xml.appendChild(fromChild)
+
+        toChild = root.createElement('to')
+        toChild.setAttribute('row', str(move[1][0]))
+        toChild.setAttribute('col', str(move[1][1]))
+        
+        xml.appendChild(toChild)
+
+        pathChild = root.createElement('path')
+        xml.appendChild(pathChild)
+
+        for x in reversed(self.path):
+            posChild = root.createElement('pos')
+            posChild.setAttribute('row', str(x.position[0]))
+            posChild.setAttribute('col', str(x.position[1]))
+            pathChild.appendChild(posChild)
+            if (x.position == moveTo.position):
+                break
+          
+        xml_str = root.toprettyxml(indent ="\t") 
+
+        print(xml_str)
 
         winner = self.winnerIs()
         if winner:
@@ -370,8 +406,6 @@ class HopperPlayer():
         self.thinking = False
 
             
-
-
 if __name__ == "__main__":
     hopper = HopperPlayer()
     while hopper.winnerIs() == None:
