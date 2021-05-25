@@ -133,7 +133,8 @@ class HopperPlayer():
         def calculateHeuristic(c, cG):
             # 1.67 por la masa del proton
             # 1.26 por la permeabilidad magnetica del vacio
-            return (((cG[0] - c[0]) + 1.67) * ((cG[1] - c[1]) + 1.26)) / ((math.e)**2)
+            # return (((cG[0] - c[0]) + 1.67) * ((cG[1] - c[1]) + 1.26)) / ((math.e)**2)
+            return math.sqrt((cG[0] - c[0]) ** 2 + (cG[1] - c[1]) ** 2)
 
         result = 0
         # Para todas las posiciones en el tablero calcula el valor 
@@ -146,13 +147,13 @@ class HopperPlayer():
 
                 if coin.piece == Coin.BLUE_PIECE:
                     reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
-                            if x.piece != Coin.BLUE_PIECE else None, 
+                            if x.piece != Coin.BLUE_PIECE else 0.0, 
                             self.redTargets))
                     result -= max(reach) if len(reach) else -706
 
                 elif coin.piece == Coin.RED_PIECE:
                     reach = list(map(lambda x: calculateHeuristic(coin.position, x.position) 
-                            if x.piece != Coin.RED_PIECE else None, 
+                            if x.piece != Coin.RED_PIECE else 0.0, 
                             self.blueTargets))
                     result += max(reach) if len(reach) else -706
         
