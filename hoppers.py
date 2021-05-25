@@ -407,7 +407,13 @@ class HopperPlayer():
 
             
 if __name__ == "__main__":
-    hopper = HopperPlayer()
+    print("Vamos a jugar Hoppers")
+    player = input("1. Rojo \n2. Azul \nSeleccione la ficha para el jugador Inteligente: ")
+    if (player == "1"):
+        hopper = HopperPlayer()
+    else:
+        hopper = HopperPlayer(chosenPlayer=Coin.BLUE_PIECE)
+
     while hopper.winnerIs() == None:
         hopper.showBoard()
         hopper.humanMove()
